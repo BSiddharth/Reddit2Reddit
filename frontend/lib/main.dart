@@ -2,11 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:random_string/random_string.dart';
+import 'package:reddit_2_reddit/components/flutter_toast.dart';
 import 'package:reddit_2_reddit/components/show_profile_pic.dart';
 import 'package:reddit_2_reddit/constants.dart';
 import 'package:reddit_2_reddit/helper/start_transfer.dart';
 import 'package:reddit_2_reddit/screens/reddit_auth_web_screen.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,11 +40,15 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String fromAccountState = '';
+
   String fromAccountImageLink = '';
+
   String toAccountState = '';
+
   String toAccountImageLink = '';
 
   String errorText = '';
+
   bool transferButtonEnabled = false;
 
   Set<optionType> optionSet = {
@@ -65,6 +69,27 @@ class _MyHomePageState extends State<MyHomePage> {
         optionSet.isNotEmpty) {
       transferButtonEnabled = true;
     }
+    setState(() {});
+  }
+
+  setAccountState({required String account, required String state}) {
+    if (account == 'fromAccount') {
+      fromAccountState = state;
+    } else {
+      toAccountState = state;
+    }
+    setState(() {});
+  }
+
+  resetFunction({required String account}) {
+    if (account == 'fromAccount') {
+      fromAccountImageLink = '';
+      fromAccountState = '';
+    } else {
+      toAccountImageLink = '';
+      toAccountState = '';
+    }
+    transferButtonEnabled = false;
     setState(() {});
   }
 
@@ -141,18 +166,10 @@ class _MyHomePageState extends State<MyHomePage> {
                         fromState: fromAccountState,
                         toState: toAccountState,
                         optionSet: optionSet)
-                    .whenComplete(() => {
-                          Fluttertoast.showToast(
-                            msg: "Transfer completed",
-                            backgroundColor: Colors.grey[400],
-                            textColor: Colors.black,
-                          )
-                        });
-                Fluttertoast.showToast(
-                  msg: "Transfer Started",
-                  backgroundColor: Colors.grey[400],
-                  textColor: Colors.black,
-                );
+                    .whenComplete(() =>
+                        {showFlutterToast(stringLabel: "Transfer completed")});
+                showFlutterToast(stringLabel: "Transfer Started");
+
                 Navigator.of(context).pop();
               },
             ),
@@ -181,90 +198,105 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    if (fromAccountImageLink == '') {
-                      fromAccountState = randomAlphaNumeric(10);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RedditAuthWebScreen(
-                            state: fromAccountState,
-                            onLoadFunction: setAccountImageLink,
-                            account: 'fromAccount',
-                          ),
-                        ),
-                      );
-                    } else {
-                      // ask to remove token from server
-                      setState(() {
-                        fromAccountImageLink = '';
-                        fromAccountState = '';
-                        transferButtonEnabled = false;
-                      });
-                      Fluttertoast.showToast(
-                        msg: "Logged out",
-                        backgroundColor: Colors.grey[400],
-                        textColor: Colors.black,
-                      );
-                    }
-                  },
-                  child: fromAccountImageLink == ''
-                      ? Container(
-                          height: 140,
-                          width: 140,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.red,
-                            ),
-                          ),
-                          child: const Center(
-                            child: Text('From Account 1'),
-                          ),
-                        )
-                      : ShowProfilePicture(url: fromAccountImageLink),
-                ),
+                // GestureDetector(
+                //   onTap: () {
+                //     if (fromAccountImageLink == '') {
+                //       fromAccountState = randomAlphaNumeric(10);
+                //       Navigator.push(
+                //         context,
+                //         MaterialPageRoute(
+                //           builder: (context) => RedditAuthWebScreen(
+                //             state: fromAccountState,
+                //             onLoadFunction: setAccountImageLink,
+                //             account: 'fromAccount',
+                //           ),
+                //         ),
+                //       );
+                //     } else {
+                //       // ask to remove token from server
+                //       setState(() {
+                //         fromAccountImageLink = '';
+                //         fromAccountState = '';
+                //         transferButtonEnabled = false;
+                //       });
+                //       showFlutterToast(stringLabel: "Logged out");
+                //       // Fluttertoast.showToast(
+                //       //   msg: "Logged out",
+                //       //   backgroundColor: Colors.grey[400],
+                //       //   textColor: Colors.black,
+                //       // );
+                //     }
+                //   },
+                //   child: fromAccountImageLink == ''
+                //       ? Container(
+                //           height: 140,
+                //           width: 140,
+                //           decoration: BoxDecoration(
+                //             shape: BoxShape.circle,
+                //             border: Border.all(
+                //               color: Colors.red,
+                //             ),
+                //           ),
+                //           child: const Center(
+                //             child: Text('From Account 1'),
+                //           ),
+                //         )
+                //       : ShowProfilePicture(url: fromAccountImageLink),
+                // ),
+                RedditProfileWidget(
+                    accountImageLink: fromAccountImageLink,
+                    holderString: 'From Account 1',
+                    account: 'fromAccount',
+                    setAccountStateFunction: setAccountState,
+                    onLoadFunction: setAccountImageLink,
+                    resetFunction: resetFunction),
                 const Icon(Icons.arrow_forward_rounded),
-                GestureDetector(
-                  onTap: () {
-                    if (toAccountImageLink == '') {
-                      toAccountState = randomAlphaNumeric(10);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RedditAuthWebScreen(
-                            state: toAccountState,
-                            onLoadFunction: setAccountImageLink,
-                            account: 'toAccount',
-                          ),
-                        ),
-                      );
-                    } else {
-                      // ask to remove token from server
-                      setState(() {
-                        toAccountImageLink = '';
-                        toAccountState = '';
-                        transferButtonEnabled = false;
-                      });
-                    }
-                  },
-                  child: toAccountImageLink == ''
-                      ? Container(
-                          height: 140,
-                          width: 140,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.red,
-                            ),
-                          ),
-                          child: const Center(
-                            child: Text('To Account 2'),
-                          ),
-                        )
-                      : ShowProfilePicture(url: toAccountImageLink),
-                ),
+                RedditProfileWidget(
+                    accountImageLink: toAccountImageLink,
+                    holderString: 'To Account 2',
+                    account: 'toAccount',
+                    setAccountStateFunction: setAccountState,
+                    onLoadFunction: setAccountImageLink,
+                    resetFunction: resetFunction),
+                // GestureDetector(
+                //   onTap: () {
+                //     if (toAccountImageLink == '') {
+                //       toAccountState = randomAlphaNumeric(10);
+                //       Navigator.push(
+                //         context,
+                //         MaterialPageRoute(
+                //           builder: (context) => RedditAuthWebScreen(
+                //             state: toAccountState,
+                //             onLoadFunction: setAccountImageLink,
+                //             account: 'toAccount',
+                //           ),
+                //         ),
+                //       );
+                //     } else {
+                //       // ask to remove token from server
+                //       setState(() {
+                //         toAccountImageLink = '';
+                //         toAccountState = '';
+                //         transferButtonEnabled = false;
+                //       });
+                //     }
+                //   },
+                //   child: toAccountImageLink == ''
+                //       ? Container(
+                //           height: 140,
+                //           width: 140,
+                //           decoration: BoxDecoration(
+                //             shape: BoxShape.circle,
+                //             border: Border.all(
+                //               color: Colors.red,
+                //             ),
+                //           ),
+                //           child: const Center(
+                //             child: Text('To Account 2'),
+                //           ),
+                //         )
+                //       : ShowProfilePicture(url: toAccountImageLink),
+                // ),
               ],
             ),
             const SizedBox(
@@ -419,6 +451,65 @@ class _CheckboxOptionState extends State<CheckboxOption> {
           style: TextStyle(color: checked ? Colors.black : Colors.grey),
         ),
       ],
+    );
+  }
+}
+
+class RedditProfileWidget extends StatelessWidget {
+  const RedditProfileWidget({
+    Key? key,
+    required this.accountImageLink,
+    required this.holderString,
+    required this.account,
+    required this.setAccountStateFunction,
+    required this.onLoadFunction,
+    required this.resetFunction,
+  }) : super(key: key);
+  final String accountImageLink;
+  final String holderString;
+  final String account;
+  final Function setAccountStateFunction;
+  final Function onLoadFunction;
+  final Function resetFunction;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (accountImageLink == '') {
+          final accountState = randomAlphaNumeric(10);
+          setAccountStateFunction(state: accountState, account: account);
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RedditAuthWebScreen(
+                state: accountState,
+                onLoadFunction: onLoadFunction,
+                account: account,
+              ),
+            ),
+          );
+        } else {
+          // TODO ask to remove token from server
+          resetFunction(account: account);
+          showFlutterToast(stringLabel: "Logged out");
+        }
+      },
+      child: accountImageLink == ''
+          ? Container(
+              height: 140,
+              width: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.red,
+                ),
+              ),
+              child: Center(
+                child: Text(holderString),
+              ),
+            )
+          : ShowProfilePicture(url: accountImageLink),
     );
   }
 }
