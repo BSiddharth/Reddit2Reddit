@@ -1,12 +1,20 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:reddit_2_reddit/constants.dart';
+import 'package:reddit_2_reddit/helper/get_image_link.dart';
 
 class RedditAuthWebScreen extends StatefulWidget {
   const RedditAuthWebScreen({
     Key? key,
-    // required this.controller,
+    required this.state,
+    required this.onLoadFunction,
+    required this.account,
   }) : super(key: key);
-  // final Completer<WebViewController> controller;
+  final String state;
+  final String account;
+  final Function onLoadFunction;
 
   @override
   State<RedditAuthWebScreen> createState() => _RedditAuthWebScreenState();
@@ -18,8 +26,6 @@ class _RedditAuthWebScreenState extends State<RedditAuthWebScreen> {
   InAppWebViewController? webViewController;
   InAppWebViewGroupOptions options = InAppWebViewGroupOptions(
       crossPlatform: InAppWebViewOptions(
-        useShouldOverrideUrlLoading: true,
-        mediaPlaybackRequiresUserGesture: false,
         cacheEnabled: false,
         clearCache: true,
       ),
@@ -29,6 +35,11 @@ class _RedditAuthWebScreenState extends State<RedditAuthWebScreen> {
       ios: IOSInAppWebViewOptions(
         allowsInlineMediaPlayback: true,
       ));
+
+  // @override
+  // void dispose() {
+  //   super.dispose();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +51,7 @@ class _RedditAuthWebScreenState extends State<RedditAuthWebScreen> {
             initialOptions: options,
             initialUrlRequest: URLRequest(
                 url: Uri.parse(
-                    'https://www.reddit.com//api/v1/authorize.compact?client_id=k4LGQvzExYaBGOcYTqdkNQ&response_type=code&state=abhikeliyekuchbhirandom&redirect_uri=http://192.168.1.52:5000/reddit-redirect/&duration=temporary&scope=identity')),
+                    'https://www.reddit.com//api/v1/authorize.compact?client_id=k4LGQvzExYaBGOcYTqdkNQ&response_type=code&state=${widget.state}&redirect_uri=http://192.168.1.52:5000/reddit-redirect/&duration=temporary&scope=identity,edit,flair,history,modconfig,modflair,modlog,modposts,modwiki,mysubreddits,privatemessages,read,report,save,submit,subscribe,vote,wikiedit,wikiread')),
             onWebViewCreated: (controller) {
               webViewController = controller;
             },
@@ -54,14 +65,17 @@ class _RedditAuthWebScreenState extends State<RedditAuthWebScreen> {
                 loadingPercentage = progress;
               });
             },
-            onLoadStop: (controller, url) {
+            onLoadStop: (controller, url) async {
               setState(() {
                 loadingPercentage = 100;
               });
-              if (url
-                  .toString()
-                  .startsWith('http://192.168.1.52:5000/reddit-redirect')) {
-                // do something
+              if (url.toString().startsWith('$kUrl/reddit-redirect')) {
+                final response = await getImageLink(state: widget.state);
+                final String imageLink = jsonDecode(response.body)['img_link'];
+                widget.onLoadFunction(
+                    account: widget.account, imageLink: imageLink);
+
+                Navigator.pop(context);
               }
             },
           ),

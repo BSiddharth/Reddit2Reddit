@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:random_string/random_string.dart';
 import 'package:reddit_2_reddit/components/show_profile_pic.dart';
 import 'package:reddit_2_reddit/constants.dart';
+import 'package:reddit_2_reddit/helper/start_transfer.dart';
 import 'package:reddit_2_reddit/screens/reddit_auth_web_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -13,8 +15,6 @@ void main() async {
   }
   runApp(const MyApp());
 }
-
-enum optionType { comments, subreddits, posts, redditors }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -40,35 +40,30 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String fromAccountState = '';
-  String fromAccountImageLink =
-      'https://styles.redditmedia.com/t5_3f0v8e/styles/profileIcon_snooaa919415-3025-4267-afce-11ac046bbd55-headshot-f.png?width=256&height=256&crop=256:256,smart&s=4d2da19933116332f11b411dfd3a875f5b93d5b5';
+  String fromAccountImageLink = '';
   String toAccountState = '';
   String toAccountImageLink = '';
 
   String errorText = '';
-  bool transferButtonEnabled = true;
+  bool transferButtonEnabled = false;
 
-  Set optionSet = {
+  Set<optionType> optionSet = {
     optionType.comments,
     optionType.posts,
     optionType.redditors,
     optionType.subreddits
   };
 
-  setAccountState({required String account, required String state}) {
-    if (account == 'fromAccount') {
-      fromAccountState = state;
-    } else {
-      toAccountState = state;
-    }
-    setState(() {});
-  }
-
   setAccountImageLink({required String account, required String imageLink}) {
     if (account == 'fromAccount') {
       fromAccountImageLink = imageLink;
     } else {
       toAccountImageLink = imageLink;
+    }
+    if (fromAccountImageLink != '' &&
+        toAccountImageLink != '' &&
+        optionSet.isNotEmpty) {
+      transferButtonEnabled = true;
     }
     setState(() {});
   }
@@ -77,7 +72,11 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       if (errortext == '') {
         errorText = '';
-        transferButtonEnabled = true;
+        if (fromAccountImageLink != '' &&
+            toAccountImageLink != '' &&
+            optionSet.isNotEmpty) {
+          transferButtonEnabled = true;
+        }
       } else {
         errorText = errortext;
         transferButtonEnabled = false;
@@ -138,6 +137,22 @@ class _MyHomePageState extends State<MyHomePage> {
             TextButton(
               child: const Text('Yes'),
               onPressed: () {
+                startTransfer(
+                        fromState: fromAccountState,
+                        toState: toAccountState,
+                        optionSet: optionSet)
+                    .whenComplete(() => {
+                          Fluttertoast.showToast(
+                            msg: "Transfer completed",
+                            backgroundColor: Colors.grey[400],
+                            textColor: Colors.black,
+                          )
+                        });
+                Fluttertoast.showToast(
+                  msg: "Transfer Started",
+                  backgroundColor: Colors.grey[400],
+                  textColor: Colors.black,
+                );
                 Navigator.of(context).pop();
               },
             ),
@@ -169,10 +184,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 GestureDetector(
                   onTap: () {
                     if (fromAccountImageLink == '') {
+                      fromAccountState = randomAlphaNumeric(10);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const RedditAuthWebScreen(),
+                          builder: (context) => RedditAuthWebScreen(
+                            state: fromAccountState,
+                            onLoadFunction: setAccountImageLink,
+                            account: 'fromAccount',
+                          ),
                         ),
                       );
                     } else {
@@ -180,6 +200,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       setState(() {
                         fromAccountImageLink = '';
                         fromAccountState = '';
+                        transferButtonEnabled = false;
                       });
                       Fluttertoast.showToast(
                         msg: "Logged out",
@@ -208,10 +229,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 GestureDetector(
                   onTap: () {
                     if (toAccountImageLink == '') {
+                      toAccountState = randomAlphaNumeric(10);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const RedditAuthWebScreen(),
+                          builder: (context) => RedditAuthWebScreen(
+                            state: toAccountState,
+                            onLoadFunction: setAccountImageLink,
+                            account: 'toAccount',
+                          ),
                         ),
                       );
                     } else {
@@ -219,6 +245,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       setState(() {
                         toAccountImageLink = '';
                         toAccountState = '';
+                        transferButtonEnabled = false;
                       });
                     }
                   },
