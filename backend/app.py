@@ -20,27 +20,25 @@ class RedditUser(db.Model):
     state = db.Column(db.String, nullable = False)
     access_token = db.Column(db.String)
     img_link = db.Column(db.String)
+    
 
 
-@app.route("/reddit-redirect/")
+@app.route("/reddit-redirect/" )
 def reddit():
+    state = request.args['state']   
     code = request.args['code']
-    state = request.args['state']
     reddit = praw.Reddit(
         client_id=os.getenv('APP_ID'),
         client_secret=os.getenv('SECRET'),
         user_agent=os.getenv('USER_AGENT'),  
         redirect_uri = 'http://192.168.1.52:5000/reddit-redirect/'   
     )
-    access_token = reddit.auth.authorize(code)
-    print('kya ye bhi read only hai?',reddit.read_only)
-    icon_img = reddit.user.me().icon_img
     
+    access_token = reddit.auth.authorize(code)
+    icon_img = reddit.user.me().icon_img    
     user = RedditUser(state = state, access_token = access_token, img_link = icon_img)
-
-    db.session.add(user)
+    db.session.add(user)   
     db.session.commit()
-
     return flask.Response(status=200)
 
 @app.route("/profileImage/", methods = ["POST"])
@@ -50,6 +48,42 @@ def sendProfileImageLink():
     response = {'img_link' : img_link}
 
     return response
+
+@app.route("/getStats/", methods = ["POST"])
+def getStats():
+    state = request.form['state']
+    accountToken = RedditUser.query.filter_by(state=state).first().access_token
+   
+    account = praw.Reddit(
+       client_id=os.getenv('APP_ID'),
+        client_secret=os.getenv('SECRET'),
+        user_agent=os.getenv('USER_AGENT'),         
+        refresh_token= accountToken,       
+    )
+    subreddits =str(len(list(account.user.subreddits(limit=None))))
+    following = str(len(list(account.user.friends())))
+    comments = 0
+    posts = 0
+    for item in account.user.me().saved(limit=None):
+            if isinstance(item, Comment):
+                comments += 1
+            elif isinstance(item, Submission):
+                posts += 1
+    response  = {
+        'subreddits':subreddits,
+        'comments':str(comments),
+        'posts':str(posts),
+        'following':following,
+    }
+    return response
+
+@app.route("/deleteUser/", methods = ["DELETE"])
+def deleteUser():
+    state = request.form['state']
+    toDelete = RedditUser.query.filter_by(state=state).first()
+    db.session.delete(toDelete)
+    db.session.commit()
+    return flask.Response(status=200)
 
 
 @app.route("/transfer/", methods = ["POST"])
@@ -62,6 +96,7 @@ def transfer():
     redditors = True if request.form['redditors'] == 'true' else False
 
     fromAccountToken = RedditUser.query.filter_by(state=fromState).first().access_token
+   
     fromAccount = praw.Reddit(
        client_id=os.getenv('APP_ID'),
         client_secret=os.getenv('SECRET'),
@@ -70,6 +105,7 @@ def transfer():
     )
 
     toAccountToken = RedditUser.query.filter_by(state=toState).first().access_token
+    
     toAccount = praw.Reddit(
        client_id=os.getenv('APP_ID'),
         client_secret=os.getenv('SECRET'),
@@ -84,6 +120,7 @@ def transfer():
     
     if posts or comments:
         for item in fromAccount.user.me().saved(limit=None):
+            
             if isinstance(item, Comment) and comments:
                 toAccount.comment(id=item.id).save()
             elif isinstance(item, Submission) and posts:

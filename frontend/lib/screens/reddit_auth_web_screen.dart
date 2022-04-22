@@ -4,17 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:reddit_2_reddit/constants.dart';
 import 'package:reddit_2_reddit/helper/get_image_link.dart';
+import 'package:reddit_2_reddit/helper/get_stats.dart';
 
 class RedditAuthWebScreen extends StatefulWidget {
   const RedditAuthWebScreen({
     Key? key,
     required this.state,
     required this.onLoadFunction,
+    required this.changeStatFunction,
     required this.account,
   }) : super(key: key);
   final String state;
   final String account;
   final Function onLoadFunction;
+  final Function changeStatFunction;
 
   @override
   State<RedditAuthWebScreen> createState() => _RedditAuthWebScreenState();
@@ -36,11 +39,6 @@ class _RedditAuthWebScreenState extends State<RedditAuthWebScreen> {
         allowsInlineMediaPlayback: true,
       ));
 
-  // @override
-  // void dispose() {
-  //   super.dispose();
-  // }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -51,7 +49,7 @@ class _RedditAuthWebScreenState extends State<RedditAuthWebScreen> {
             initialOptions: options,
             initialUrlRequest: URLRequest(
                 url: Uri.parse(
-                    'https://www.reddit.com//api/v1/authorize.compact?client_id=k4LGQvzExYaBGOcYTqdkNQ&response_type=code&state=${widget.state}&redirect_uri=http://192.168.1.52:5000/reddit-redirect/&duration=temporary&scope=identity,edit,flair,history,modconfig,modflair,modlog,modposts,modwiki,mysubreddits,privatemessages,read,report,save,submit,subscribe,vote,wikiedit,wikiread')),
+                    'https://www.reddit.com//api/v1/authorize.compact?client_id=k4LGQvzExYaBGOcYTqdkNQ&response_type=code&state=${widget.state}&redirect_uri=http://192.168.1.52:5000/reddit-redirect/&duration=permanent&scope=identity,edit,flair,history,modconfig,modflair,modlog,modposts,modwiki,mysubreddits,privatemessages,read,report,save,submit,subscribe,vote,wikiedit,wikiread')),
             onWebViewCreated: (controller) {
               webViewController = controller;
             },
@@ -74,6 +72,16 @@ class _RedditAuthWebScreenState extends State<RedditAuthWebScreen> {
                 final String imageLink = jsonDecode(response.body)['img_link'];
                 widget.onLoadFunction(
                     account: widget.account, imageLink: imageLink);
+                if (widget.account == 'fromAccount') {
+                  final response = await getStats(state: widget.state);
+                  final data = jsonDecode(response.body);
+                  widget.changeStatFunction(
+                    c: data["comments"],
+                    p: data["posts"],
+                    s: data["subreddits"],
+                    f: data["following"],
+                  );
+                }
 
                 Navigator.pop(context);
               }

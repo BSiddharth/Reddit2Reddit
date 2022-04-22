@@ -5,6 +5,7 @@ import 'package:random_string/random_string.dart';
 import 'package:reddit_2_reddit/components/flutter_toast.dart';
 import 'package:reddit_2_reddit/components/show_profile_pic.dart';
 import 'package:reddit_2_reddit/constants.dart';
+import 'package:reddit_2_reddit/helper/delete_user.dart';
 import 'package:reddit_2_reddit/helper/start_transfer.dart';
 import 'package:reddit_2_reddit/screens/reddit_auth_web_screen.dart';
 
@@ -49,6 +50,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String errorText = '';
 
+  String comments = '0';
+  String posts = '0';
+  String subreddits = '0';
+  String following = '0';
+
   bool transferButtonEnabled = false;
 
   Set<optionType> optionSet = {
@@ -57,6 +63,19 @@ class _MyHomePageState extends State<MyHomePage> {
     optionType.redditors,
     optionType.subreddits
   };
+
+  setStatBox({
+    required String c,
+    required String p,
+    required String s,
+    required String f,
+  }) {
+    comments = c;
+    posts = p;
+    subreddits = s;
+    following = f;
+    setState(() {});
+  }
 
   setAccountImageLink({required String account, required String imageLink}) {
     if (account == 'fromAccount') {
@@ -78,6 +97,14 @@ class _MyHomePageState extends State<MyHomePage> {
     } else {
       toAccountState = state;
     }
+    setState(() {});
+  }
+
+  resetStatBox() {
+    comments = '0';
+    posts = '0';
+    subreddits = '0';
+    following = '0';
     setState(() {});
   }
 
@@ -198,105 +225,29 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // GestureDetector(
-                //   onTap: () {
-                //     if (fromAccountImageLink == '') {
-                //       fromAccountState = randomAlphaNumeric(10);
-                //       Navigator.push(
-                //         context,
-                //         MaterialPageRoute(
-                //           builder: (context) => RedditAuthWebScreen(
-                //             state: fromAccountState,
-                //             onLoadFunction: setAccountImageLink,
-                //             account: 'fromAccount',
-                //           ),
-                //         ),
-                //       );
-                //     } else {
-                //       // ask to remove token from server
-                //       setState(() {
-                //         fromAccountImageLink = '';
-                //         fromAccountState = '';
-                //         transferButtonEnabled = false;
-                //       });
-                //       showFlutterToast(stringLabel: "Logged out");
-                //       // Fluttertoast.showToast(
-                //       //   msg: "Logged out",
-                //       //   backgroundColor: Colors.grey[400],
-                //       //   textColor: Colors.black,
-                //       // );
-                //     }
-                //   },
-                //   child: fromAccountImageLink == ''
-                //       ? Container(
-                //           height: 140,
-                //           width: 140,
-                //           decoration: BoxDecoration(
-                //             shape: BoxShape.circle,
-                //             border: Border.all(
-                //               color: Colors.red,
-                //             ),
-                //           ),
-                //           child: const Center(
-                //             child: Text('From Account 1'),
-                //           ),
-                //         )
-                //       : ShowProfilePicture(url: fromAccountImageLink),
-                // ),
                 RedditProfileWidget(
-                    accountImageLink: fromAccountImageLink,
-                    holderString: 'From Account 1',
-                    account: 'fromAccount',
-                    setAccountStateFunction: setAccountState,
-                    onLoadFunction: setAccountImageLink,
-                    resetFunction: resetFunction),
+                  accountImageLink: fromAccountImageLink,
+                  holderString: 'From Account 1',
+                  account: 'fromAccount',
+                  setAccountStateFunction: setAccountState,
+                  onLoadFunction: setAccountImageLink,
+                  resetFunction: resetFunction,
+                  accountState: fromAccountState,
+                  changeStatFunction: setStatBox,
+                  resetStatBoxFunction: resetStatBox,
+                ),
                 const Icon(Icons.arrow_forward_rounded),
                 RedditProfileWidget(
-                    accountImageLink: toAccountImageLink,
-                    holderString: 'To Account 2',
-                    account: 'toAccount',
-                    setAccountStateFunction: setAccountState,
-                    onLoadFunction: setAccountImageLink,
-                    resetFunction: resetFunction),
-                // GestureDetector(
-                //   onTap: () {
-                //     if (toAccountImageLink == '') {
-                //       toAccountState = randomAlphaNumeric(10);
-                //       Navigator.push(
-                //         context,
-                //         MaterialPageRoute(
-                //           builder: (context) => RedditAuthWebScreen(
-                //             state: toAccountState,
-                //             onLoadFunction: setAccountImageLink,
-                //             account: 'toAccount',
-                //           ),
-                //         ),
-                //       );
-                //     } else {
-                //       // ask to remove token from server
-                //       setState(() {
-                //         toAccountImageLink = '';
-                //         toAccountState = '';
-                //         transferButtonEnabled = false;
-                //       });
-                //     }
-                //   },
-                //   child: toAccountImageLink == ''
-                //       ? Container(
-                //           height: 140,
-                //           width: 140,
-                //           decoration: BoxDecoration(
-                //             shape: BoxShape.circle,
-                //             border: Border.all(
-                //               color: Colors.red,
-                //             ),
-                //           ),
-                //           child: const Center(
-                //             child: Text('To Account 2'),
-                //           ),
-                //         )
-                //       : ShowProfilePicture(url: toAccountImageLink),
-                // ),
+                  accountImageLink: toAccountImageLink,
+                  holderString: 'To Account 2',
+                  account: 'toAccount',
+                  setAccountStateFunction: setAccountState,
+                  onLoadFunction: setAccountImageLink,
+                  resetFunction: resetFunction,
+                  accountState: toAccountState,
+                  changeStatFunction: setStatBox,
+                  resetStatBoxFunction: resetStatBox,
+                ),
               ],
             ),
             const SizedBox(
@@ -368,21 +319,98 @@ class _MyHomePageState extends State<MyHomePage> {
               height: 10,
             ),
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.red,
-                    ),
-                    borderRadius: const BorderRadius.all(Radius.circular(20))),
-                child: const Center(
-                  child: Text(
-                      'Transfer process logs and stats will be shown here'),
-                ),
+              child: StatBox(
+                savedComments: comments,
+                savedPosts: posts,
+                following: following,
+                subreddits: subreddits,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class StatBox extends StatelessWidget {
+  const StatBox({
+    Key? key,
+    required this.savedComments,
+    required this.subreddits,
+    required this.following,
+    required this.savedPosts,
+  }) : super(key: key);
+  final String savedComments;
+  final String subreddits;
+  final String following;
+  final String savedPosts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+          border: Border.all(
+            color: Colors.red,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(20))),
+      child: Center(
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              StatBoxColumn(
+                data: savedPosts,
+                label: 'Saved Posts',
+              ),
+              StatBoxColumn(
+                data: subreddits,
+                label: 'Subreddits',
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              StatBoxColumn(
+                data: following,
+                label: 'Following',
+              ),
+              StatBoxColumn(
+                data: savedComments,
+                label: 'Saved comments',
+              ),
+            ],
+          )
+        ],
+      )),
+    );
+  }
+}
+
+class StatBoxColumn extends StatelessWidget {
+  const StatBoxColumn({Key? key, required this.label, required this.data})
+      : super(key: key);
+  final String data;
+  final String label;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          data,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(
+          height: 10,
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12),
+        )
+      ],
     );
   }
 }
@@ -459,18 +487,24 @@ class RedditProfileWidget extends StatelessWidget {
   const RedditProfileWidget({
     Key? key,
     required this.accountImageLink,
+    required this.accountState,
     required this.holderString,
     required this.account,
     required this.setAccountStateFunction,
     required this.onLoadFunction,
     required this.resetFunction,
+    required this.changeStatFunction,
+    required this.resetStatBoxFunction,
   }) : super(key: key);
   final String accountImageLink;
+  final String accountState;
   final String holderString;
   final String account;
   final Function setAccountStateFunction;
   final Function onLoadFunction;
   final Function resetFunction;
+  final Function changeStatFunction;
+  final Function resetStatBoxFunction;
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -486,11 +520,15 @@ class RedditProfileWidget extends StatelessWidget {
                 state: accountState,
                 onLoadFunction: onLoadFunction,
                 account: account,
+                changeStatFunction: changeStatFunction,
               ),
             ),
           );
         } else {
-          // TODO ask to remove token from server
+          if (account == 'fromAccount') {
+            resetStatBoxFunction();
+          }
+          deleteUser(state: accountState);
           resetFunction(account: account);
           showFlutterToast(stringLabel: "Logged out");
         }
