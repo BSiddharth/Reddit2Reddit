@@ -1,6 +1,7 @@
 # Reddit2Reddit
 
 A simple app to transfer saved posts, saved comments, friends, following redditors and following subreddits from one account to another.
+Made using [Flutter](https://flutter.dev/) and [Flask](https://flask.palletsprojects.com/en/2.1.x/)
 
 <p allign = 'center'>
 <img src='screenshots/app_icon.png' height='100px'/>
